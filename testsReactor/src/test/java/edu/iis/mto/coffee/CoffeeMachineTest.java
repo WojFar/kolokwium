@@ -89,7 +89,7 @@ class CoffeeMachineTest {
         } catch (GrinderException e) {
             fail();
         }
-        
+
         CoffeeOrder order = CoffeeOrder.builder().withType(CoffeeType.ESPRESSO).withSize(CoffeeSize.STANDARD).build();
 
         Coffee result = coffeeMachine.make(order);
@@ -115,7 +115,7 @@ class CoffeeMachineTest {
 
 
     @Test
-    void checkIfMakeReturnsCoffeCorrectWaterAmountWhenEverythingIsOK() throws GrinderException {
+    void checkIfMakeReturnsCoffeCorrectWaterAmountWhenEverythingIsOK(){
         when(receipes.getReceipe(any())).thenReturn(CoffeeReceipe.builder().withWaterAmounts(coffeSizes).build());
         try {   //just java
             when(grinder.grind(any())).thenReturn(true);
@@ -128,6 +128,39 @@ class CoffeeMachineTest {
         Coffee result = coffeeMachine.make(order);
         assertTrue(result.getWaterAmount() == 10);
     }
+
+
+    @Test
+    void checkIfMakeReturnsCoffeeWithErrorIfGrinderExceptionIsThrown() {
+        when(receipes.getReceipe(any())).thenReturn(CoffeeReceipe.builder().withWaterAmounts(coffeSizes).build());
+        try {   //just java
+            when(grinder.grind(any())).thenThrow(GrinderException.class);
+        } catch (GrinderException e) {
+            fail();
+        }
+
+        CoffeeOrder order = CoffeeOrder.builder().withType(CoffeeType.ESPRESSO).withSize(CoffeeSize.SMALL).build();
+
+        Coffee result = coffeeMachine.make(order);
+        assertTrue(result.getStatus() == Status.ERROR);
+    }
+
+    @Test
+    void checkIfMakeReturnsCoffeeWithMessageIfGrinderHasNoBeansExceptionIsThrown() {
+        when(receipes.getReceipe(any())).thenReturn(CoffeeReceipe.builder().withWaterAmounts(coffeSizes).build());
+        try {   //just java
+            when(grinder.grind(any())).thenReturn(false);
+        } catch (GrinderException e) {
+            fail();
+        }
+
+        CoffeeOrder order = CoffeeOrder.builder().withType(CoffeeType.ESPRESSO).withSize(CoffeeSize.SMALL).build();
+
+        Coffee result = coffeeMachine.make(order);
+        assertTrue(result.getMessage() != null);
+    }
+
+
     
 
 
