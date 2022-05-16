@@ -2,6 +2,7 @@ package edu.iis.mto.coffee;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -19,6 +20,7 @@ import edu.iis.mto.coffee.machine.Coffee;
 import edu.iis.mto.coffee.machine.CoffeeGrinder;
 import edu.iis.mto.coffee.machine.CoffeeMachine;
 import edu.iis.mto.coffee.machine.CoffeeOrder;
+import edu.iis.mto.coffee.machine.GrinderException;
 import edu.iis.mto.coffee.machine.MilkProvider;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,9 +37,21 @@ class CoffeeMachineTest {
 
     CoffeeMachine coffeeMachine;
 
+    Map<CoffeeSize,Integer> coffeSizes;
+    
+    @Test
+    void itCompiles() {
+        MatcherAssert.assertThat(true, equalTo(true));
+    }
+
     @BeforeEach
     void setUp() {
         coffeeMachine = new CoffeeMachine(grinder, milkProvider, receipes);
+
+        coffeSizes = new TreeMap<CoffeeSize,Integer>();
+        coffeSizes.put(CoffeeSize.SMALL, 10);
+        coffeSizes.put(CoffeeSize.DOUBLE, 20);
+        coffeSizes.put(CoffeeSize.STANDARD, 15);
 
     }
 
@@ -47,32 +61,78 @@ class CoffeeMachineTest {
         CoffeeOrder order = CoffeeOrder.builder().withType(CoffeeType.ESPRESSO).withSize(CoffeeSize.STANDARD).build();
         
         Coffee result = coffeeMachine.make(order);
-        assertTrue(result.getStatus() != null);
+        assertTrue(result.getStatus() == Status.ERROR);
     }
 
     @Test
-    void checkIfMakeReturnsWithStatusReadyWhenEverythingIsOK() {
-        Map<CoffeeSize,Integer> coffeSizes = new TreeMap<CoffeeSize,Integer>();
-        coffeSizes.put(CoffeeSize.SMALL, 10);
+    void checkIfMakeReturnsWithStatusReadyWhenEverythingIsOK() { 
 
         when(receipes.getReceipe(any())).thenReturn(CoffeeReceipe.builder().withWaterAmounts(coffeSizes).build());
+        try {   //just java
+            when(grinder.grind(any())).thenReturn(true);
+        } catch (GrinderException e) {
+            fail();
+        }
 
-        CoffeeOrder order = CoffeeOrder.builder().withType(CoffeeType.ESPRESSO).withSize(CoffeeSize.STANDARD).build();
+        CoffeeOrder order = CoffeeOrder.builder().withType(CoffeeType.LATTE).withSize(CoffeeSize.STANDARD).build();
 
         Coffee result = coffeeMachine.make(order);
         assertTrue(result.getStatus() == Status.READY);
     }
 
+    @Test
+    void checkIfMakeReturnsCoffeWithoutMilkWhenEverythingIsOK() { 
+
+        when(receipes.getReceipe(any())).thenReturn(CoffeeReceipe.builder().withWaterAmounts(coffeSizes).build());
+        try {   //just java
+            when(grinder.grind(any())).thenReturn(true);
+        } catch (GrinderException e) {
+            fail();
+        }
+        
+        CoffeeOrder order = CoffeeOrder.builder().withType(CoffeeType.ESPRESSO).withSize(CoffeeSize.STANDARD).build();
+
+        Coffee result = coffeeMachine.make(order);
+        assertTrue(result.getMilkAmout() == 0);
+    }
+
+    @Test
+    void checkIfMakeReturnsCoffeWithMilkWhenEverythingIsOK() {    
+        final int milkAmount = 10;
+        when(milkProvider.pour(milkAmount)).thenReturn(milkAmount);
+        when(receipes.getReceipe(any())).thenReturn(CoffeeReceipe.builder().withWaterAmounts(coffeSizes).withMilkAmount(milkAmount).build());
+        try {   //just java
+            when(grinder.grind(any())).thenReturn(true);
+        } catch (GrinderException e) {
+            fail();
+        }
+
+        CoffeeOrder order = CoffeeOrder.builder().withType(CoffeeType.ESPRESSO).withSize(CoffeeSize.STANDARD).build();
+
+        Coffee result = coffeeMachine.make(order);
+        assertTrue(result.getMilkAmout() == milkAmount);
+    }
 
 
+    @Test
+    void checkIfMakeReturnsCoffeCorrectWaterAmountWhenEverythingIsOK() throws GrinderException {
+        when(receipes.getReceipe(any())).thenReturn(CoffeeReceipe.builder().withWaterAmounts(coffeSizes).build());
+        try {   //just java
+            when(grinder.grind(any())).thenReturn(true);
+        } catch (GrinderException e) {
+            fail();
+        }
+
+        CoffeeOrder order = CoffeeOrder.builder().withType(CoffeeType.ESPRESSO).withSize(CoffeeSize.SMALL).build();
+
+        Coffee result = coffeeMachine.make(order);
+        assertTrue(result.getWaterAmount() == 10);
+    }
     
 
 
 
-    @Test
-    void itCompiles() {
-        MatcherAssert.assertThat(true, equalTo(true));
-    }
+    
 
 
 
